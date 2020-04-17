@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>智慧教室管理系统</title>
+	<!-- <script src="../js/jquery-3.4.1.js"></script>
+	<script src="../js/jquery.cookie.js"></script>
+	<script src="../js/vue.js"></script>
+	<link rel="stylesheet" type="text/css" href="../css/iview.css">
+	<script src="../js/iview.js"></script> -->
+	<script src="https://cdn.staticfile.org/jquery/3.4.0/jquery.min.js"></script>
+	<script src="https://cdn.staticfile.org/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+	<script src="https://cdn.staticfile.org/vue/2.6.11/vue.min.js"></script>
+	<link href="http://cdn.staticfile.org/iview/3.5.4/styles/iview.css" rel="stylesheet" type="text/css">
+	<script src="http://cdn.staticfile.org/iview/3.5.4/iview.min.js"></script>
+
+	<script src="../js/utils.js"></script>
+	<style type="text/css">
+		@import "../css/layout.css";
+
+		.detail {
+			padding: 15px;
+		}
+
+		.subhead {
+			font-size: 20px;
+			font-weight: bold;
+			padding-left: 10px;
+		}
+
+		.detail-box {
+			border: 1.5px solid #d7dde4;
+			margin: 5px 0 15px 0;
+			padding: 5px 10px;
+			font-size: 15px;
+		}
+
+		.subtitle {
+			display: inline-block;
+			height: 30px;
+			line-height: 30px;
+			padding-right: 5px;
+		}
+
+		.state-text {
+			display: inline-block;
+			color: white;
+			padding: 1px 5px;
+			font-size: 10px;
+			height: 20px;
+			line-height: 20px;
+			font-weight: bold;
+		}
+
+		.guest-info {
+			display: inline-block;
+			width: 100%;
+		}
+
+		.guest-usage {
+			display: block;
+			width: 100%;
+		}
+
+		.ivu-table-small td {
+			height: 24px;
+		}
+
+		.camera-options {
+			border: 1px black solid;
+			height: calc(40% - 25px);
+		}
+
+		video {
+			background-color: black;
+			width: 96%;
+			height: 60%;
+			margin-left: 2%;
+			margin-top: 25px;
+		}
+	</style>
+</head>
+<body>
+	<div class="layout">
+		<Row type="flex">
+			<i-col span="3" class="layout-menu-left">
+				<i-menu :active-name="activeName" theme="dark" width="auto" ref="equip_menu" :open-names="openNames"
+				 @on-open-change="menuChange" @on-select="menuItemChange">
+					<div class="layout-logo-left">教&emsp;室</div>
+					<div class="layout-menu-box">
+						<Submenu v-for="building in buildings" :name="building.name">
+							<template slot="title">
+								{{building.name}}
+							</template>
+							<Menu-item v-for="room in building.classrooms" :name="building.name+'-'+room.number">{{room.number}}</Menu-item>
+						</Submenu>
+					</div>
+				</i-menu>
+			</i-col>
+			<i-col span="21">
+				<div class="layout-header">
+					智慧教室一站式管理平台
+					<i-menu mode="horizontal" class="layout-user-menu" ref="user_menu" @on-select="userItemChange">
+						<Submenu name="1">
+							<template slot="title">
+								<Icon type="ios-people" size="24" style="margin: 0;"></Icon>
+								<span style="vertical-align: middle;">{{nickname}}</span>
+								<Badge :count="unsolved"></Badge>
+							</template>
+							<Menu-group title="操作">
+								<Menu-item name="dealReq">
+									<Icon type="md-alert"></Icon>请求处理
+									<Badge :count="unsolved"></Badge>
+								</Menu-item>
+								<Menu-item name="logout">
+									<Icon type="md-log-out"></Icon>退出登录
+								</Menu-item>
+							</Menu-group>
+						</Submenu>
+					</i-menu>
+				</div>
+				<div class="layout-content">
+					<div class="layout-content-main">
+						<Row type="flex">
+							<i-col span="11" class="detail">
+								<span class="subhead">设备详情</span>
+								<div class="detail-box">
+									<div><b class="subtitle">教&ensp;室&ensp;号：</b>{{equipID}}</div>
+									<div><b class="subtitle">位&emsp;&emsp;置：</b>{{activeName.replace('-',' - ')}}</div>
+									<div>
+										<b class="subtitle">时段选择：</b>
+										<Date-picker v-model="selectedDate" @on-change="onSelectRangeChange" type="date" placeholder="选择日期" size="small"
+										 style="width: 120px;" :clearable="false"></Date-picker>
+										&emsp;第
+										<i-select v-model="selectedCourse" @on-change="onSelectRangeChange" placeholder="" style="width:50px" size="small">
+											<i-option v-for="item in 12" :value="item" :key="item">{{item}}</i-option>
+										</i-select>
+										节
+									</div>
+									<div>
+										<b class="subtitle">预约状态：</b>
+										<span v-if="avaiable==1" class="state-text" style="background-color:#00cc66;">空 闲</span>
+										<span v-else-if="avaiable==2" class="state-text" style="background-color:#ff3300;">已 租</span>
+										<span v-else class="state-text" style="background-color:#f0f;">未 知</span>
+									</div>
+								</div>
+								<span class="subhead">预约详情</span>
+								<div class="detail-box">
+									<Carousel dots="outside">
+										<Carousel-item>
+											<div class="guest-info" v-for="(guest, index) in guestsInfo">
+												<Row type="flex">
+													<i-col span="10"><b class="subtitle">姓&ensp;名：</b>{{guest.name}}</i-col>
+													<i-col span="14"><b class="subtitle">学&ensp;号：</b>{{guest.stuId}}</i-col>
+												</Row>
+											</div>
+											<b class="subtitle">时&ensp;段：</b>{{timePeriod}}
+										</Carousel-item>
+										<Carousel-item>
+											<Row type="flex">
+												<i-col span="10"><b class="subtitle">联系电话：</b>{{phoneNumber}}</i-col>
+												<i-col span="14"><b class="subtitle">参加人数：</b>{{peopleNum}}</i-col>
+											</Row>
+											<div class="guest-usage">
+												<b class="subtitle">用&emsp;途：</b>{{usage}}
+											</div>
+										</Carousel-item>
+										<Carousel-item>
+											<b class="subtitle">物品借用：</b><br>
+											<span v-if="borrowData.length==0">&emsp;&emsp;无</span>
+											<span v-for="item in borrowData" style="width: 40%; display: inline-block;">{{item.objectName}} *
+												{{item.objectNum}}</span>
+										</Carousel-item>
+									</Carousel>
+								</div>
+								<span class="subhead">行为检测记录</span>
+								<i-table stripe :columns="columns" :data="violations" size="small" style="margin-top:5px;" :height="tableHeight"></i-table>
+							</i-col>
+							<i-col span="13">
+								<video :src="videoSrc" preload="auto" controls="controls"></video>
+								<div class="camera-options"></div>
+							</i-col>
+						</Row>
+					</div>
+				</div>
+				<div class="layout-copy">
+					四川大学开源硬件协会
+				</div>
+			</i-col>
+		</Row>
+	</div>
+</body>
+<script>
+	var app = new Vue({
+		el: '.layout',
+		data: {
+			nickname: "",
+			unsolved: 0,
+
+			buildings: [
+				// {
+				// 	name: '一教A座',
+				// 	classrooms: [
+				// 		{
+				// 			number: 'A505',
+				// 			id: '01001001'
+				// 		}
+				// 	]
+				// }
+			],
+			openNames: [''],
+			selectedRoomID: '',
+
+			equipID: "？？？",
+			activeName: '未选择',
+			selectedDate: null,
+			selectedCourse: null,
+			avaiable: 0,
+
+			guestsInfo: [{ name: '无', stuId: '无' }, { name: '无', stuId: '无' }, { name: '无', stuId: '无' }],
+			timePeriod: '无',
+			phoneNumber: '无',
+			peopleNum: 0,
+			usage: '无',
+			borrowData: [
+				// {
+				// 	reservationId: '',
+				// 	objectName: '马克笔',
+				// 	objectNum: 2
+				// }
+			],
+
+			windowHeight: document.body.clientHeight,
+			tableHeight: Math.max(document.body.clientHeight / 2 - 550, 150),
+			columns: [
+				{
+					title: '时间',
+					key: 'timestamp',
+					align: 'center',
+					width: 150
+				},
+				{
+					title: '主要借用人',
+					key: 'borrowA',
+					align: 'center'
+				},
+				{
+					title: '联系方式',
+					key: 'phoneA',
+					align: 'center'
+				},
+				{
+					title: '违规行为',
+					key: 'behavior',
+					align: 'center'
+				}
+			],
+			violations: [],
+
+			videoSrc: '../resource/movie.mp4'
+		},
+		mounted: function () {
+			const that = this;
+			window.onresize = function () {
+				that.windowHeight = document.body.clientHeight;
+			};
+
+			$.ajax({
+				type: 'POST',
+				url: contextPath + '/main/init',
+				data: {},
+				success: function (result) {
+					that.buildings = result.buildings;
+					that.unsolved = result.unsolved;
+					that.nickname = result.nickname;
+				},
+				error: function (result) {
+					that.$Message.warning('服务器出现异常，无法获取教室列表！');
+				}
+			});
+		},
+		watch: {
+			windowHeight: function (newV, oldV) {
+				this.tableHeight = Math.max(newV - 550, 100);
+			}
+		},
+		methods: {
+			/* 教室菜单打开列表改变时 */
+			menuChange: function (buildingName) {
+				let newItem = this.getNewItem(this.openNames, buildingName);
+				this.openNames = [newItem];
+				this.$nextTick(function () {
+					this.$refs.equip_menu.updateOpened();
+				})
+			},
+
+			/* 获取教室菜单列表打开项的改动 */
+			getNewItem: function (oldArray, newArray) {
+				for (let i = 0; i < oldArray.length; i++) {
+					if (oldArray[i] != newArray[i]) {
+						return newArray[i];
+					}
+				}
+				return newArray[newArray.length - 1];
+			},
+
+			/* 激活的教室菜单子项改变时 */
+			menuItemChange: function (item) {
+				this.activeName = item;
+				this.selectedDate = null;
+				this.selectedCourse = null;
+				this.avaiable = 0;
+				this.clearReservation();
+				var selected = item.split("-");
+				for (let i = 0; i < this.buildings.length; i++) {
+					if (this.buildings[i].name == selected[0]) {
+						for (let j = 0; j < this.buildings[i].classrooms.length; j++) {
+							if (this.buildings[i].classrooms[j].number == selected[1]) {
+								this.selectedRoomID = this.buildings[i].classrooms[j].id;
+								this.equipID = this.selectedRoomID;
+								this.queryViolations(this.selectedRoomID);
+								return;
+							}
+						}
+					}
+				}
+			},
+
+			/* 清空查询到的预约信息 */
+			clearReservation: function () {
+				this.guestsInfo = [{ name: '无', stuId: '无' }, { name: '无', stuId: '无' }, { name: '无', stuId: '无' }];
+				this.timePeriod = "无";
+				this.phoneNumber = "无";
+				this.peopleNum = "无";
+				this.usage = "无";
+				this.borrowData.length = 0;;
+			},
+
+			/* 查询教室的违规信息 */
+			queryViolations: function (roomID) {
+				const that = this;
+				$.ajax({
+					type: 'POST',
+					url: contextPath + '/main/violations',
+					data: {
+						classroom: roomID
+					},
+					success: function (result) {
+						that.violations = result.res;
+					},
+					error: function (result) {
+						that.$Message.warning('服务器出现异常，无法获取违规列表！');
+					}
+				});
+			},
+
+			/* 管理员菜单点击改变时 */
+			userItemChange: function (item) {
+				var that = this;
+				if ("logout" == item) {
+					$.post(contextPath + "/account/logout", {}, function () {
+						that.$Message.success('退出成功！');
+						$.removeCookie("nickname");
+						redrectTo(1, 1000);
+					});
+				} else if ("dealReq" == item) {
+					$.cookie("reqsType", "new");
+					redrectTo(3, 0);
+				}
+			},
+
+			/* 选择日期或节改变时 */
+			onSelectRangeChange: function () {
+				const that = this;
+				if (this.selectedDate == "" || this.selectedCourse == null || this.activeName == "未选择") {
+					return;
+				}
+				var date = this.selectedDate;
+				$.ajax({
+					type: 'POST',
+					url: contextPath + '/main/reservation',
+					data: {
+						classroom: that.selectedRoomID,
+						year: date.getFullYear(),
+						month: date.getMonth() + 1,
+						date: date.getDate(),
+						course: this.selectedCourse
+					},
+					success: function (result) {
+						if (result.reservation == null) {
+							that.avaiable = 1;
+							that.clearReservation();
+						} else {
+							that.avaiable = 2;
+							var stuA = new Object();
+							var stuB = new Object();
+							var stuC = new Object();
+							stuA.name = result.reservation.borrowA;
+							stuB.name = result.reservation.borrowB;
+							stuC.name = result.reservation.borrowC;
+							stuA.stuId = result.reservation.borrowAId;
+							stuB.stuId = result.reservation.borrowBId;
+							stuC.stuId = result.reservation.borrowCId;
+							that.guestsInfo = [];
+							that.guestsInfo.push(stuA);
+							that.guestsInfo.push(stuB);
+							that.guestsInfo.push(stuC);
+							that.timePeriod = result.reservation.reserveDate + "\u3000" + result.reservation.startCourse + "~" + result.reservation.endCourse + "节";
+							that.phoneNumber = result.reservation.phoneA;
+							that.peopleNum = result.reservation.peopleNum;
+							that.usage = result.reservation.usage;
+							that.borrowData = result.borrows;
+						}
+					},
+					error: function (result) {
+						that.$Message.warning('服务器出现异常，无法获取预约情况！');
+					}
+				})
+			}
+		}
+	});
+</script>
+</html>

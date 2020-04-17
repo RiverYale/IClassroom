@@ -1,0 +1,68 @@
+.layout{
+    border: 1px solid #d7dde4;
+    background: #f5f7f9;
+    position: relative;
+    overflow: hidden;
+}
+.layout-content{
+    height: calc(100vh - 95px);
+    margin: 10px 0px 0px 0px;
+    overflow-y: scroll;
+    background: #fff;
+}
+.layout-copy{
+    text-align: center;
+    color: #9ea7b4;
+    line-height: 32px;
+    font-size: 12px;
+    height: 32px;
+}
+.layout-menu-left{
+    background: #464c5b;
+}
+.layout-header{
+    height: 50px;
+    line-height: 50px;
+    background: #fff;
+    box-shadow: 0 1px 1px rgba(0,0,0,.1);
+    font-weight: bold;
+    font-size: 26px;
+    padding-left: 12px;
+}
+.layout-user-menu{
+    display: inline-block;
+    height: 50px;
+    position: absolute;
+    right: 0;
+    font-size: 18px;
+    font-weight: normal;
+}
+.layout-logo-left{
+    width: 90%;
+    height: 30px;
+    background: #5b6270;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    font-size: 16px;
+    line-height: 30px;
+    border-radius: 3px;
+    margin: 15px auto;
+}
+.layout-menu-box{
+    height: calc(100vh - 63px);
+    overflow-y: auto;
+}
+.layout-user-menu .ivu-menu-submenu-title{
+    line-height: 50px;
+}
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background-color: #fff;
+    border-radius:10px;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #aaa;
+}

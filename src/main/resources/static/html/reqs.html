@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>智慧教室管理系统</title>
+	<!-- <script src="../js/jquery-3.4.1.js"></script>
+	<script src="../js/jquery.cookie.js"></script>
+	<script src="../js/vue.js"></script>
+	<link rel="stylesheet" type="text/css" href="../css/iview.css">
+	<script src="../js/iview.js"></script> -->
+	<script src="https://cdn.staticfile.org/jquery/3.4.0/jquery.min.js"></script>
+	<script src="https://cdn.staticfile.org/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+	<script src="https://cdn.staticfile.org/vue/2.6.11/vue.min.js"></script>
+	<link href="http://cdn.staticfile.org/iview/3.5.4/styles/iview.css" rel="stylesheet" type="text/css">
+	<script src="http://cdn.staticfile.org/iview/3.5.4/iview.min.js"></script>
+
+	<script src="../js/utils.js"></script>
+	<style type="text/css">
+		@import "../css/layout.css";
+	</style>
+</head>
+<body>
+	<div class="layout">
+		<div class="layout-header">
+			智慧教室一站式管理平台
+			<i-menu mode="horizontal" class="layout-user-menu" ref="user_menu" @on-select="userItemChange" :active-name="activename">
+				<Submenu name="1">
+					<template slot="title">
+						<template v-if="'oldReqs'==activename">
+							<Icon type="md-bookmark" size="24" style="margin: 0;"></Icon>
+							<span style="vertical-align: middle;">已处理请求</span>
+						</template>
+						<template v-else-if="'ackReqs'==activename">
+							<Icon type="md-checkmark" size="24" style="margin: 0;"></Icon>
+							<span style="vertical-align: middle;">已同意请求</span>
+						</template>
+						<template v-else-if="'nckReqs'==activename">
+							<Icon type="md-close" size="24" style="margin: 0;"></Icon>
+							<span style="vertical-align: middle;">已拒绝请求</span>
+						</template>
+						<template v-else-if="'newReqs'==activename">
+							<Icon type="md-help" size="24" style="margin: 0;"></Icon>
+							<span style="vertical-align: middle;">待处理请求</span>
+						</template>
+						<Badge :count="unsolved"></Badge>
+					</template>
+					<Menu-group title="已处理">
+						<Menu-item name="oldReqs">
+							<Icon type="md-bookmark"></Icon>已处理请求
+						</Menu-item>
+						<Menu-item name="ackReqs">
+							<Icon type="md-checkmark"></Icon>已同意请求
+						</Menu-item>
+						<Menu-item name="nckReqs">
+							<Icon type="md-close"></Icon>已拒绝请求
+						</Menu-item>
+					</Menu-group>
+					<Menu-group title="待处理">
+						<Menu-item name="newReqs">
+							<Icon type="md-help"></Icon>待处理请求
+							<Badge :count="unsolved"></Badge>
+						</Menu-item>
+					</Menu-group>
+				</Submenu>
+				<Submenu name="2">
+					<template slot="title">
+						<Icon type="ios-people" size="24" style="margin: 0;"></Icon>
+						<span style="vertical-align: middle;">{{nickname}}</span>
+					</template>
+					<Menu-group title="操作">
+						<Menu-item name="manageEquips">
+							<Icon type="md-videocam"></Icon>设备管理
+						</Menu-item>
+						<Menu-item name="logout">
+							<Icon type="md-log-out"></Icon>退出登录
+						</Menu-item>
+					</Menu-group>
+				</Submenu>
+			</i-menu>
+		</div>
+		<div class="layout-content" style="padding-left:1px; margin-top: 0; height: calc(100vh - 85px);">
+			<i-table border :columns="reqHeads" :data="reqsData" :height="tableHeight" :width="tableWidth"></i-table>
+		</div>
+		<div class="layout-copy">
+			四川大学开源硬件协会
+		</div>
+	</div>
+</body>
+<script>
+	var app = new Vue({
+		el: ".layout",
+		data: {
+			nickname: "",
+			unsolved: 0,
+			activename: 'newReqs',
+			windowHeight: document.body.clientHeight,
+			windowWidth: document.body.clientHeight,
+			tableHeight: Math.max(document.body.clientHeight - 85, 0),
+			tableWidth: Math.max(document.body.clientWidth - 10, 1340),
+			reqHeads: [
+				{
+					title: '教室',
+					key: 'classroom',
+					width: 130,
+					align: 'center'
+				},
+				{
+					title: '预定时间',
+					key: 'timePeriod',
+					width: 150,
+					align: 'center'
+				},
+				{
+					title: '借用人',
+					key: 'students',
+					width: 180,
+					align: 'center',
+					render(h, params) {
+						return h('div', {
+							style: {
+								padding: '3px 0'
+							}
+						}, [
+								h('div', params.row.students[0]),
+								h('div', params.row.students[1]),
+								h('div', params.row.students[2])
+							]);
+					}
+				},
+				{
+					title: '联系电话',
+					key: 'phoneA',
+					width: 120,
+					align: 'center'
+				},
+				{
+					title: '参加人数',
+					key: 'peopleNum',
+					width: 100,
+					align: 'center'
+				},
+				{
+					title: '借用用途',
+					key: 'usage',
+					width: 200,
+					align: 'center'
+				},
+				{
+					title: '设备借用',
+					key: 'borrows',
+					width: 130,
+					align: 'center',
+					render(h, params) {
+						var borrows = [];
+						for(let i = 0; i<params.row.borrows.length; i++) {
+							var obj = params.row.borrows[i];
+							borrows.push(h('div', obj.objectName + " * " + obj.objectNum));
+						}
+						return h('div', borrows.length == 0 ? "无" : borrows);
+					}
+				},
+				{
+					title: '操作',
+					key: 'action',
+					width: 130,
+					align: 'center',
+					render(h, params) {
+						if (params.row.result == 0) {
+							return h('div', [
+								h('Button', {
+									props: {
+										type: 'success',
+										size: 'small'
+									},
+									style: {
+										marginRight: '5px'
+									},
+									on: {
+										click() {
+											app.handle(params.index, 1)
+										}
+									}
+								}, '同意'),
+								h('Button', {
+									props: {
+										type: 'error',
+										size: 'small'
+									},
+									on: {
+										click() {
+											app.handle(params.index, 2)
+										}
+									}
+								}, '拒绝')
+							]);
+						} else if (params.row.result == 1) {
+							return h('div', {
+								style: {
+									color: '#fff',
+									backgroundColor: '#0c6',
+									padding: '2px 0'
+								}
+							}, '已同意')
+						} else {
+							return h('div', {
+								style: {
+									color: '#fff',
+									backgroundColor: '#f30',
+									padding: '2px 0'
+								}
+							}, '已拒绝')
+
+						}
+					}
+				},
+				{
+					title: '操作备注',
+					key: 'remarks',
+					align: 'center',
+					render(h, params) {
+						if (params.row.result == 0) {
+							return h('Input', {
+								on: {
+									input: function (val) {
+										app.reqsData[params.index].remarks = val;
+									}
+								}
+							});
+						}
+						return h('div', params.row.remarks);
+					}
+				}
+			],
+			reqsData: [
+				// {
+				// 	id: '',
+				// 	classroom: '综合楼A座 A000',
+				// 	timePeriod: '2020-01-01 11~12',
+				// 	students: ['aaa(2017123253369)', 'bbb(2017456253369)', 'ccc(2017789253369)'],
+				// 	phoneA: '13523659720',
+				// 	peopleNum: 5,
+				// 	usage: 'iView 是采用 MIT 许可的开源项目，您可以在个人或企业项目中免费使用。',
+				// 	borrows: [
+				// 		{
+				// 			objectName: '马克笔',
+				// 			objectNum: 4
+				// 		}
+				// 	],
+				// 	result: 0,		//0 未知  1 同意  2 拒绝
+				// 	remarks: ''
+				// }
+			]
+		},
+		mounted: function () {
+			const that = this;
+			window.onresize = function () {
+				that.windowHeight = document.body.clientHeight;
+				that.windowWidth = document.body.clientWidth;
+			};
+			if($.cookie("reqsType") == undefined) {
+				this.getReqs("new");
+			} else {
+				this.getReqs($.cookie("reqsType"));
+				this.activename = $.cookie("reqsType") + "Reqs";
+			}
+
+			$.post(contextPath + "/reqs/init", {}, function (result) {
+				that.unsolved = result.unsolved;
+				that.nickname = result.nickname;
+			});
+		},
+		watch: {
+			windowHeight: function (newV, oldV) {
+				this.tableHeight = Math.max(newV - 85, 0);
+			},
+			windowWidth: function (newV, oldV) {
+				this.tableWidth = Math.max(newV - 9, 1310);
+			}
+		},
+		methods: {
+			/* 管理员菜单点击改变时 */
+			userItemChange: function (item) {
+				var that = this;
+				if ("logout" == item) {
+					$.post(contextPath + "/account/logout", {}, function () {
+						that.$Message.success('退出成功！');
+						$.removeCookie("nickname");
+						redrectTo(1, 1000);
+					});
+				} else if ("manageEquips" == item) {
+					redrectTo(2, 0);
+				} else {
+					this.activename = item;
+					if ('oldReqs' == item) {
+						this.getReqs("old");
+					} else if ('ackReqs' == item) {
+						this.getReqs("ack");
+					} else if ('nckReqs' == item) {
+						this.getReqs("nck");
+					} else if ('newReqs' == item) {
+						this.getReqs("new");
+					}
+				}
+			},
+
+			/**
+			*	old 获取已处理的预约请求
+			*	ack 获取同意的预约请求
+			*	nck 获取拒绝的预约请求
+			*	new 获取未处理的预约请求
+			*/
+			getReqs: function (type) {
+				const that = this;
+				$.cookie("reqsType", type);
+				$.ajax({
+					type: 'POST',
+					url: contextPath + '/reqs/get',
+					data: {
+						type: type
+					},
+					success: function (result) {
+						for(let i = 0; i < result.res.length; i++) {
+							result.res[i].classroom = result.res[i].building + " " + result.res[i].number;
+							result.res[i].timePeriod = result.res[i].reserveDate + " " + result.res[i].startCourse + "~" + result.res[i].endCourse;
+							result.res[i].students = [];
+							result.res[i].students.push(result.res[i].borrowA + "(" + result.res[i].borrowAId +")");
+							result.res[i].students.push(result.res[i].borrowB + "(" + result.res[i].borrowBId +")");
+							result.res[i].students.push(result.res[i].borrowC + "(" + result.res[i].borrowCId +")");
+						}
+						that.reqsData = result.res;
+					},
+					error: function (result) {
+						that.$Message.warning('服务器出现异常，无法获取预约信息！');
+					}
+				});
+			},
+
+			/* 处理预约请求 */
+			handle: function (index, code) {
+				const that = this;
+				$.ajax({
+					type: 'POST',
+					url: contextPath + '/reqs/handle',
+					data: {
+						id: this.reqsData[index].id,
+						result: code,
+						remarks: this.reqsData[index].remarks
+					},
+					success: function (result) {
+						if(result.res == 1) {
+							that.reqsData[index].result = code;
+							that.$Message.success(result.info);
+							that.unsolved -= 1;
+						} else {
+							that.$Message.warning(result.info);
+						}
+					},
+					error: function (result) {
+						that.$Message.warning('服务器出现异常，无法处理预约！');
+					}
+				});
+			}
+		}
+	});
+</script>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>智慧教室管理系统</title>
+	<!-- <script src="../js/jquery-3.4.1.js"></script>
+	<script src="../js/jquery.cookie.js"></script>
+	<script src="../js/vue.js"></script>
+	<link rel="stylesheet" type="text/css" href="../css/iview.css">
+	<script src="../js/iview.js"></script> -->
+	<script src="https://cdn.staticfile.org/jquery/3.4.0/jquery.min.js"></script>
+	<script src="https://cdn.staticfile.org/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+	<script src="https://cdn.staticfile.org/vue/2.6.11/vue.min.js"></script>
+	<link href="http://cdn.staticfile.org/iview/3.5.4/styles/iview.css" rel="stylesheet" type="text/css">
+	<script src="http://cdn.staticfile.org/iview/3.5.4/iview.min.js"></script>
+
+	<script src="../js/utils.js"></script>
+	<style type="text/css">
+		body {
+			background-color: #9EA7B4;
+		}
+
+		.fadeInDown {
+			display: flex;
+			width: 100vw;
+			height: 100vh;
+			vertical-align: center;
+			animation: fadeInDownAni .8s 1;
+		}
+
+		#_box {
+			margin: auto;
+			border: 1px transparent solid;
+			border-radius: 10px;
+			background-color: white;
+			box-shadow: 0 20px 40px 0 rgba(0, 0, 0, .3);
+			width: 400px;
+			text-align: center;
+		}
+
+		.loginTitle {
+			color: #464c5b;
+			font-weight: bold;
+			font-size: 24px;
+			line-height: 80px;
+		}
+
+		@keyframes fadeInDownAni {
+			from {
+				opacity: 0;
+				transform: translate(0, -100%);
+			}
+
+			to {
+				opacity: 1;
+				transform: none;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="fadeInDown">
+		<div id="_box" v-on:keyup.enter="login">
+			<div class="loginTitle">智慧教室一站式管理平台</div>
+			<i-input v-model="username" size="large" icon="ios-person" type="text" placeholder="用户名" style="width:250px; margin-top:10px;"></i-input>
+			<i-input v-model="password" size="large" icon="ios-key" type="password" placeholder="密码" style="width:250px; margin-top:10px;"></i-input>
+			<br>
+			<i-button type="primary" size="large" @click="login" :loading="isLoading" style="width:150px; margin-top:30px; margin:30px;">登
+				录</i-button>
+		</div>
+	</div>
+</body>
+<script>
+	var app = new Vue({
+		el: "#_box",
+		data: {
+			username: '',
+			password: '',
+			isLoading: false
+		},
+		methods: {
+			login: function () {
+				let isOk = true;
+				if (this.username == "") {
+					this.$Message.warning('用户名不能为空！');
+					isOk = false;
+				}
+				if (this.password == "") {
+					this.$Message.warning('密码不能为空！');
+					isOk = false;
+				}
+				if (isOk) {
+					this.isLoading = true;
+					var that = this;
+					$.ajax({
+						type: 'POST',
+						url: contextPath + '/account/login',
+						data: {
+							username: that.username,
+							password: that.password
+						},
+						success: function (result) {
+							if (result.res) {
+								that.$Message.success('欢迎您！' + result.nickname);
+								redrectTo(2, 1000);
+							} else {
+								that.$Message.error('用户名或密码错误！');
+							}
+						},
+						error: function (result) {
+							that.$Message.warning('服务器出现异常！');
+						},
+						complete: function (result) {
+							that.isLoading = false;
+						}
+					})
+				}
+			}
+		}
+	});
+</script>
+</html>

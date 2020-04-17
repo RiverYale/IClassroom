@@ -1,0 +1,18 @@
+server:
+  port: 80
+  servlet:
+    context-path: /iclassroom
+
+spring:
+  mvc:
+    view:
+      prefix: /html/
+      suffix: .html
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    driverClassName: org.postgresql.Driver
+    username: Lenovo
+    password: 4298
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai 
